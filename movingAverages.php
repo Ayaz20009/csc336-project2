@@ -1,5 +1,8 @@
 <?php
 require "config.php";
+require_once ('jpgraph/jpgraph.php');
+require_once ('jpgraph/jpgraph_line.php');
+require_once ('jpgraph/jpgraph_bar.php');
 
 // Connection
 $db = new mysqli($host, $username, $password, "stockmarket");
@@ -45,6 +48,10 @@ flush();
 ob_flush();
 $avgArray = array();
 
+// Used to graph for instrument id = 0
+$day50Array = array();
+$day200Array = array();
+
 for($i = 0; $i < count($stockArray); $i++){
 	$priceArray = $stockArray[$i];
 	$avgInstArray = array();
@@ -54,11 +61,32 @@ for($i = 0; $i < count($stockArray); $i++){
 		$day50 = array_sum(array_slice ( $priceArray, $day-50, 50 ))/50;
 		$day200 = array_sum(array_slice ( $priceArray, $day-200, 200 ))/200;
 
+                if ($i == 0) {
+                    array_push($day50Array, $day50);
+                    array_push($day200Array, $day200);
+                }
+
 		// Store the boolean value and the associated price for the day
 		$avgInstArray[$day] = array(($day50 > $day200 ? 1:0), $priceArray[$day]);
 	}
 	$avgArray[$i] = $avgInstArray;
 }
+
+// Show moving crossing averages for instrument id = 0
+$graph = new Graph(600, 200);
+$graph->SetScale('intint');
+$graph->title->Set('Moving averages for INSTRUMENT_ID = 0');
+$graph->xaxis->title->Set('(Day)');
+$graph->yaxis->title->Set('(Average open price in $)');
+ 
+$lineploti=new LinePlot($day50Array);
+$lineplot1->SetFillColor('orange@0.5');
+$lineploti=new LinePlot($day200Array);
+$lineplot1->SetFillColor('blue@0.5');
+
+$graph->Add($lineplot1);
+$graph->Add($lineplot2);
+$graph->Stroke();
 
 echo "6. Adding stocks to buy/sell list for each day, time: ".(microtime(true) - $starttime)." <br><br>";
 flush();
